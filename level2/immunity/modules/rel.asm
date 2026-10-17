@@ -86,9 +86,17 @@ crash               lda       #'*       ; signal a crash error
                     clrb                ; b=0: crash
                     fcb       $8C       skip the LDB below (CMPX #)
 start               ldb       #$FF      ; b=$FF: cold start
+                    IFNE    d32
+* Dragon 32: stay in SAM map type 0. A stock 32K Dragon has no motherboard RAM
+* above $7FFF; the i-MMU-nity supplies the whole 64K through the MMU.
+                  ELSE
                     clr       >$FFDF    ; sam all-RAM mode
+                  ENDC
                     orcc      #IntMasks ; irqs off
                     clr       >PIA0Base+3 ; turn off the VSYNC IRQ
+                    IFNE      d64
+                    clr       >PIA0Base+1 ; and HSYNC: the Dragon ROM leaves it on
+                    ENDC
                     clra
                     tfr       a,dp
 
@@ -105,6 +113,13 @@ DatLoop             sta       1,x
                     inca
                     cmpa      #$40
                     bne       DatLoop
+                  IFNE    d32
+* Slot 7 = the kernel block in both tasks (board RAM). The loop above gave it
+* motherboard $3F, which a 32K Dragon doesn't have.
+                    lda       #KrnBlk
+                    sta       >DAT.Regs+7
+                    sta       >DAT.Regs+15
+                  ENDC
                     clr       >MJ.Init1 ; task 0
                     lda       #MJ.Boot
                     sta       >MJ.Init0 ; mmu on, alternate vectors still off
@@ -179,7 +194,12 @@ Reloc               ldb       ,s+       ; check the boot status
                     bsr       CopyLp
                     jmp       >Offset+InHigh
 
-Failed              clr       >$FF40    ; turn off the disk drives
+Failed
+                    IFNE      d64
+                    clr       >$FF48    ; Dragon drive latch ($FF40 is the WD command)
+                    ELSE
+                    clr       >$FF40    ; turn off the disk drives
+                    ENDC
 Hang                bra       Hang
 
 * Copy X bytes from U to Y

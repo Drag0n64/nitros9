@@ -251,7 +251,11 @@ HW.Page             SET       $07                 Device descriptor hardware pag
 * it still contains the I/O and the bit of RAM that's mapped to KrnBlk.
 * Usually, the value of KrnBlk is fixed for a particular hardware design;
 * For the COCO GIME, it's always $3F.
+                    IFNE      d32
+KrnBlk              SET       $37                 Dragon 32: board RAM (motherboard $3F does not exist)
+                    ELSE
 KrnBlk              SET       $3F
+                    ENDC
 
                     ENDC
                     ENDC

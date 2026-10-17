@@ -221,8 +221,12 @@ Finalize            lbsr      Seek                seek /DD to 0
                     leax      P$DATImg,x          point to it's DAT image
 
                     orcc      #IntMasks           shut off IRQ's
+                    IFNE      d32
+                    lda       #KrnBlk             Dragon 32: the kernel block (board RAM)
+                    ELSE
                     lda       #$3F                block $3F
-                    sta       >$FFA8              map in block $3F
+                    ENDC
+                    sta       >$FFA8              map in the kernel block
 
                     lda       >oflag              do OS9Boot?
                     bne       do.os9bt            yup, skip ahead

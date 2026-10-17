@@ -1922,7 +1922,11 @@ MJGfxLp             cmpb      #Bt.Block
                     cmpa      #NotRAM   ; reserved and free?
                     beq       MJGfxGot
 MJGfxNxt            incb
+                    IFNE    d32
+                    cmpb      #Bt.Block ; Dragon 32: only motherboard blocks $38-$3A are left
+                  ELSE
                     cmpb      #$3E
+                  ENDC
                     blo       MJGfxLp
                     comb
                     ldb       #E$NoRAM

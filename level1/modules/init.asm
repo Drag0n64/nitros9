@@ -152,7 +152,11 @@ InstStr             equ       *
                     fcc       "Tano Dragon (US)"
                     else
                     ifne      d64
+                    ifne      d32
+                    fcc       "Dragon 32 + i-MMU-nity"
+                    else
                     fcc       "Dragon 64 (UK)"
+                    endc
                     else
                     ifne      dalpha
                     fcc       "Dragon Alpha"

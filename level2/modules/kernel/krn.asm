@@ -95,7 +95,13 @@ MName               fcs       /Krn/
 * replace (-8 for the block reservation, +5 for the slot 1 text screen
 * block, +4 for marking it in use), so pad by 1 less to keep the tail of
 * krn at the same address.
+                    IFNE    d32
+* Dragon 32: the NotRAM+RAMinUse lda below is 2 bytes, so the pad is 2 less
+* (keeps the tail of krn, and so the vectors at $FEEE, at the same address).
+                    fcc       /www.n/
+                  ELSE
                     fcc       /www.nit/
+                  ENDC
                   ELSE
                     fcc       /www.nitr/
                   ENDC
@@ -758,7 +764,11 @@ KrnBlock            aslb                ; B <= 1 (hi bit goes into carry, 0 goes
 * below. X=D.BlkMap here.
                   IFNE    immunity ; begin conditional assembly for immunity
                     leax      $38,x     ; first motherboard block
+                    IFNE    d32
+                    ldd       #NotRAM*256+8 ; Dragon 32: reserve 8 blocks, $38-$3F
+                  ELSE
                     ldd       #NotRAM*256+7 ; reserve 7 blocks, $38-$3E
+                  ENDC
                   ELSE
 *]]] i-MMU-nity PORT
                     bitb      #%00110000 ; is the block above 128K-256K?
@@ -781,7 +791,11 @@ l@                  sta       ,x+       ; mark them all
 * are both already mapped.
                   IFNE    immunity ; begin conditional assembly for immunity
                     lda       #RAMinUse ; get the RAM in use flag
+                    IFNE    d32
+                    sta       Bt.Block-$40,x ; mark Bt.Block (X=D.BlkMap+$40 here)
+                  ELSE
                     sta       Bt.Block-$3F,x ; mark Bt.Block (X=D.BlkMap+$3F here)
+                  ENDC
                   ENDC
 *]]] i-MMU-nity PORT
 
@@ -861,6 +875,9 @@ KrnMarkPage         sta       ,x+       ; mark this page
                     decb                ; done?
                     bne       KrnMarkPage ; no, keep going
                     ldx       <D.BlkMap ; get the pointer to the start of the block map
+                    IFNE    d32
+                    lda       #NotRAM+RAMinUse ; Dragon 32: slot 7 is never process memory (E$MemFul)
+                  ENDC
                     sta       KrnBlk,x  ; mark kernel block as "RAM in use", instead of "Module in block"
 S.AltIRQ            rts                 ; return
 
