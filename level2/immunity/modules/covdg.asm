@@ -78,10 +78,14 @@ edition             set       2
                   IFNE    COCOVGA
 COLSIZE             equ       64
 ROWSIZE             equ       32
+COLMASK             equ       $3F
+ROWMASK             equ       $C0
 SCRSIZE             equ       COLSIZE*ROWSIZE
                   ELSE
 COLSIZE             equ       32
 ROWSIZE             equ       16
+COLMASK             equ       $1F
+ROWMASK             equ       $E0
 SCRSIZE             equ       COLSIZE*ROWSIZE
                   ENDC
 
@@ -697,10 +701,10 @@ L028D               stb       ,x+       ; clear last line
 * $0D - carriage return
 Retrn               bsr       HideCrsr  ; hide cursor
                   IFNE    H6309
-                    aim       #~(COLSIZE-1),<VD.CrsAL,u ; move cursor to start of row
+                    aim       #ROWMASK,<VD.CrsAL,u ; move cursor to start of row
                   ELSE
                     tfr       x,d
-                    andb      #~(COLSIZE-1) ; move cursor to start of row
+                    andb      #ROWMASK  ; move cursor to start of row
                     stb       <VD.CrsAL,u ; save updated cursor address
                   ENDC
 ShowCrsr            ldx       <VD.CrsrA,u ; get cursor address
@@ -816,7 +820,7 @@ DoCurXY             bsr       HideCrsr  ; hide cursor
 * $04 - clear characters to end of line
 ErEOLine            bsr       HideCrsr  ; hide cursor
                     tfr       x,d       ; move current cursor position to D
-                    andb      #COLSIZE-1 ; number of characters put on this row
+                    andb      #COLMASK  ; number of characters put on this row
                     negb                ; negative
                     bra       L0374     ; and clear one line
 
@@ -1792,7 +1796,7 @@ Rt.Cursr            ldd       <VD.CrsrA,u
                     subd      <VD.ScrnA,u
                     pshs      d
                     clra
-                    andb      #COLSIZE-1
+                    andb      #COLMASK
                     addb      #$20
                     std       R$X,x     ; save column position in ASCII
                     puls      d         ; calculate row from screen offset
