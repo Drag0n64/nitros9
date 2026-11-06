@@ -11,11 +11,15 @@ Sources here override same-named files elsewhere on the recipe vpath
   graphics screens live in motherboard RAM and are shown through the SAM.
   A graphics screen takes no system slot: each graphics call maps it into
   slot 1 in place of the text block and puts the text block back on return.
-  `-DALLCAPS=1` shows lower case letters as normal capitals.
+  `-DALLCAPS=1` shows lower case letters as normal capitals. `-DCOCOVGA=1`
+  builds the CoCoVGA 64x32 console and allocates four contiguous 512-byte
+  page pairs (2K) per text screen.
 - `term_vdg.asm`: the `/Term` descriptor, the Level 2 VDG case of
-  `level1/coco1/modules/term_vdg.asm`.
+  `level1/coco1/modules/term_vdg.asm`, with conditional dimensions for all
+  four console variants.
 - `vdgwin.asm`: the `/V1`-`/V7` VDG window descriptors, one source assembled
-  with `-DWNUM=1..7`.
+  with `-DWNUM=1..7`. The CoCoVGA recipe limits this to two additional 2K
+  screens, because the motherboard text-screen area is 8K.
 - `cohr.asm`: the hi-res text consoles, used instead of CoVDG with the recipe's
   `HIRES` option, keeping the module name `CoVDG` so VTIO links it
   unchanged. One source builds CoHR (51x24, 4x8 font in 5-pixel cells,

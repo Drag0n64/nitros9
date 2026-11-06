@@ -26,6 +26,10 @@ atrv                set       ReEnt+rev
 rev                 set       $00
 
 * Window descriptor definitions
+                    ifne      COCOVGA
+szx                 set       64        64x32 CoCoVGA text
+szy                 set       32
+                    else
                     ifne      USECOHR
 szx                 set       51        51x24 text on PMODE 4 (CoHR)
 szy                 set       24
@@ -36,6 +40,7 @@ szy                 set       24
                     else
 szx                 set       32        number of columns for display
 szy                 set       16        number for rows for display
+                    endc
                     endc
                     endc
 wnum                set       0         window number

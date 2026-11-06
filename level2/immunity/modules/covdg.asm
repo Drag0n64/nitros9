@@ -74,6 +74,17 @@ atrv                set       ReEnt+rev
 rev                 set       $00
 edition             set       2
 
+* Text geometry. CoCoVGA uses a 2K 64x32 screen; the normal VDG uses 512 bytes.
+                  IFNE    COCOVGA
+COLSIZE             equ       64
+ROWSIZE             equ       32
+SCRSIZE             equ       COLSIZE*ROWSIZE
+                  ELSE
+COLSIZE             equ       32
+ROWSIZE             equ       16
+SCRSIZE             equ       COLSIZE*ROWSIZE
+                  ENDC
+
 skip2               equ       $8C       cmpx instruction
 
                     mod       eom,name,tylg,atrv,start,size
@@ -115,12 +126,79 @@ InitNoHiRes         equ       *
                     bcs       L00D6
                     stx       <VD.ScrnA,u ; save start address of the screen
                     stx       <VD.CrsrA,u ; and cursor address
-                    leax      >512,x    ; point to end of screen+1
+                    leax      >SCRSIZE,x ; point to end of screen+1
                     stx       <VD.ScrnE,u ; save it
                     lda       #$60      ; get default character (space)
                     sta       <VD.CChar,u ; save as character under the cursor
 * LCB: This should save to VD.CChar instead, and free VD.Chr1 up for some other use
                     sta       <VD.Chr1,u ; only referenced here ??
+
+                  IFNE    COCOVGA
+* CoCoVGA setup adapted from the proven Level 1 CoVDG implementation.
+* MJScrAlc returns a 512-byte-aligned address and reserves the full 2K screen.
+                    clr       <VD.Caps,u ; CoCoVGA supplies true lowercase
+                    pshs      cc,u
+                    orcc      #IntMasks ; protect the PIA/SAM programming sequence
+                    ldx       #$FF03
+                    lda       ,x
+                    pshs      a          ; save PIA0 control state
+                    lda       ,x
+                    ora       #$04       ; ensure PIA0B is not in direction mode
+                    sta       ,x
+                    lda       ,x
+                    anda      #$FD       ; trigger VSYNC IRQ falling edge
+                    sta       ,x
+                    lda       ,x
+                    ora       #$01       ; enable VSYNC IRQ
+                    sta       ,x
+                    leax      VGASetup,pcr
+                    ldu       <VD.ScrnA,u
+                    ldb       #VGASetupLen
+CVGASetupLp         lda       ,x+
+                    sta       ,u+
+                    decb
+                    bne       CVGASetupLp
+                    lda       $FF02      ; clear pending VSYNC
+CVGAWaitSetup       lda       $FF03
+                    bpl       CVGAWaitSetup
+                    lda       $FF02
+* Program the CoCoVGA combo lock.
+                    ldx       #$FF22
+                    lda       ,x
+                    tfr       a,b
+                    anda      #$07
+                    ora       #$90
+                    sta       ,x
+                    anda      #$07
+                    ora       #$48
+                    sta       ,x
+                    anda      #$07
+                    ora       #$A0
+                    sta       ,x
+                    anda      #$07
+                    ora       #$F8
+                    sta       ,x
+                    lda       ,x
+                    anda      #$07
+                    ora       #$00       ; select CoCoVGA register bank 0
+                    sta       ,x
+                    sta       $FFC0      ; clear SAM V0
+                    sta       $FFC2      ; clear SAM V1
+                    sta       $FFC4      ; clear SAM V2
+CVGAWaitFrame       lda       $FF03
+                    bpl       CVGAWaitFrame
+* Restore the PIA and select SAM text mode.
+                    lda       ,x
+                    anda      #$8F
+                    ora       #$A0
+                    sta       ,x
+                    sta       $FFC0
+                    sta       $FFC3
+                    sta       $FFC4
+                    puls      a
+                    sta       $FF03
+                    puls      u,cc
+                  ENDC
                     lbsr      ClrScrn   ; clear the screen
                     inc       <VD.Start,u ; increment VDG screen in use
                     ldd       <VD.Strt1,u ; seemling useless??
@@ -139,6 +217,11 @@ InitNoHiRes         equ       *
                   ENDC
                     clrb                ; no error & return
 L00D6               puls      pc,u,y,x
+
+                  IFNE    COCOVGA
+VGASetup            fcb       $00,$81,$00,$03,$00,$00,$00,$00,$02
+VGASetupLen         equ       *-VGASetup
+                  ENDC
 
 SetupPal            pshs      u,y,x,d
 * Apparently next two lines unused. I suspect something to do with Level 3 upgrade. Palette
@@ -230,11 +313,20 @@ TermNoHiRes         equ       *
                     lbsr      GfxFree   ; release any graphics screens and fill stack
                     ldd       <VD.ScrnA,u ; get pointer to alpha screen
                     beq       ClrStat   ; branch if none
-                    ldx       <D.SysMem ; mark its two pages free for covdg again
+                    ldx       <D.SysMem ; release the text screen's reserved pages
+                  IFNE    COCOVGA
+                    leay      a,x
+                    lda       #MJScrFre
+                    ldb       #8
+MJScrFreeLp         sta       ,y+
+                    decb
+                    bne       MJScrFreeLp
+                  ELSE
                     ldb       #MJScrFre
                     stb       a,x
                     inca
                     stb       a,x
+                  ENDC
 
 * 6809/6309 stack blast clear or TFM (vector once installed)
 ClrStat             ldb       #$E1      ; size of 1 page -$1D (SCF memory requirements)
@@ -245,12 +337,11 @@ L006F               clr       ,x+       ; set stored byte to zero
                     clrb
                     puls      pc,u,y,x
 
-* i-MMU-nity text screens. The VDG can only display motherboard RAM, so krn
-* keeps Bt.Block (a motherboard block) in slot 1 of the system map and
-* reserves system pages $20-$3F. Text screens are the 512-byte pairs of
-* pages from $22 up ($20-$21 hold the boot screen's BtDebug cursor; $22-$23
-* is the boot screen, so /term takes it over). In the system page map a
-* reserved pair is MJScrFre while free and MJScrUse while a screen.
+* i-MMU-nity text screens live in Bt.Block, mapped into system slot 1.
+* The normal VDG allocates 512-byte page pairs; CoCoVGA allocates four
+* contiguous pairs (2K) for each 64x32 text screen. Page $22 is the boot
+* screen taken over by /term; $20-$21 retain the hidden BtDebug cursor.
+* MJScrFre marks free reserved pages and MJScrUse marks allocated pages.
 MJScrFre            equ       RAMinUse  as marked by krn
 MJScrUse            equ       ModBlock  any other non-zero value
 MJScrLo             equ       $22
@@ -260,20 +351,54 @@ MJBtCurs            equ       $0004     BtDebug cursor after boot: Bt.Block+4..$
 * Exit: X=screen address, or carry set and B=error
 MJScrAlc            ldx       <D.SysMem
                     ldb       #MJScrLo
-MJScrLp             lda       b,x
+MJScrLp
+                  IFNE    COCOVGA
+* CoCoVGA needs four contiguous 512-byte pairs (2K) per text screen.
+* Search on 512-byte boundaries and claim all eight 256-byte pages.
+                    cmpb      #(MJScrHi-7)
+                    bhs       MJScrFull
+                    pshs      b
+                    leay      b,x
+                    ldb       #8
+MJScrCheckVGA       lda       ,y+
+                    cmpa      #MJScrFre
+                    bne       MJScrNextVGA
+                    decb
+                    bne       MJScrCheckVGA
+                    puls      b
+                    bra       MJScrGot
+MJScrNextVGA       puls      b
+                    addb      #2
+                    bra       MJScrLp
+MJScrFull           comb
+                    ldb       #E$MemFul
+                    rts
+                  ELSE
+MJScrLpVDG          lda       b,x
                     cmpa      #MJScrFre
                     beq       MJScrGot
                     addb      #2
                     cmpb      #MJScrHi
-                    blo       MJScrLp
+                    blo       MJScrLpVDG
                     comb
                     ldb       #E$MemFul
                     rts
+                  ENDC
 MJScrGot            lda       #MJScrUse
+                  IFNE    COCOVGA
+                    pshs      b
+                    leay      b,x
+                    ldb       #8
+MJScrMarkVGA        sta       ,y+
+                    decb
+                    bne       MJScrMarkVGA
+                    puls      b
+                  ELSE
                     sta       b,x
                     incb
                     sta       b,x
                     decb
+                  ENDC
                     cmpb      #MJScrLo  ; taking over the boot screen?
                     bne       MJScrAdr
 * From now on send the BtDebug breadcrumbs (and crash codes) to the hidden
@@ -544,24 +669,24 @@ L026E               lbsr      SetPals   ; actually change palette
 *         rts
 
 * Screen scroll.
-SScrl               ldx       <VD.ScrnA,u ; get ptr to 32x16 screen
+SScrl               ldx       <VD.ScrnA,u ; get ptr to active text screen
                   IFNE    H6309
-                    ldd       #$2060    ; a=width of line in bytes, B=VDG space char
-                    leay      a,x       ; y=screen address + down one line
-                    ldw       #512-32   ; block move 15 of 16 lines
+                    ldd       #COLSIZE*$100+$60 ; A=bytes per row, B=VDG space
+                    leay      a,x       ; Y=screen address plus one row
+                    ldw       #SCRSIZE-COLSIZE ; move all but the last row
                     tfm       y+,x+     ; scroll screen up
-                    stx       <VD.CrsrA,u ; save new cursor address (1st char on last line)
+                    stx       <VD.CrsrA,u ; save first character of last row
                   ELSE
 * Replace with StkBlCpy vector later for 6809 portion
-                    leax      <32,x     ; point to start of 2nd line
+                    leax      <COLSIZE,x ; point to start of second row
 L0279               ldd       ,x++      ; grab 2 chars
-                    std       <-34,x    ; save on line above
+                    std       <-COLSIZE-2,x ; save on row above
                     cmpx      <VD.ScrnE,u ; done screen?
                     blo       L0279     ; no, keep scrolling
-                    leax      <-32,x    ; done, point 1ast char on last line
+                    leax      <-COLSIZE,x ; point to last row
                     stx       <VD.CrsrA,u ; save as new cursor position
-                    lda       #32       ; # chars to clear on last line
-                    ldb       #$60      ; vdg char for space
+                    lda       #COLSIZE  ; characters to clear on last row
+                    ldb       #$60      ; VDG character for space
                   ENDC
 * 6809 - StkBlClr, 6309 - TFM
 L028D               stb       ,x+       ; clear last line
@@ -572,10 +697,10 @@ L028D               stb       ,x+       ; clear last line
 * $0D - carriage return
 Retrn               bsr       HideCrsr  ; hide cursor
                   IFNE    H6309
-                    aim       #$E0,<VD.CrsAL,u ; strip out bits 0-4
+                    aim       #~(COLSIZE-1),<VD.CrsAL,u ; move cursor to start of row
                   ELSE
                     tfr       x,d
-                    andb      #$E0      ; strip out bits 0-4
+                    andb      #~(COLSIZE-1) ; move cursor to start of row
                     stb       <VD.CrsAL,u ; save updated cursor address
                   ENDC
 ShowCrsr            ldx       <VD.CrsrA,u ; get cursor address
@@ -589,10 +714,10 @@ RtsOk               clrb
 
 * $0A - moves cursor down
 CurDown             bsr       HideCrsr  ; hide cursor
-                    leax      <32,x     ; move X down one line
+                    leax      <COLSIZE,x ; move X down one row
                     cmpx      <VD.ScrnE,u ; at the end of the screen?
                     bcs       L02C1     ; branch if not
-                    leax      <-32,x    ; else go back up one line
+                    leax      <-COLSIZE,x ; else go back up one row
                     pshs      x         ; save X
                     bsr       SScrl     ; and scroll the screen
                     puls      x         ; and restore pointer
@@ -677,7 +802,7 @@ CurXY               ldb       #$02      ; we want to claim the next two chars
 DoCurXY             bsr       HideCrsr  ; hide cursor
                     ldb       <VD.NChr2,u ; get ASCII Y-pos
                     subb      #C$SPAC   ; adjust to base 0
-                    lda       #32       ; * 32 chars/line
+                    lda       #COLSIZE  ; * COLSIZE chars/line
                     mul
                     addb      <VD.NChar,u ; add in X-pos
                     adca      #$00
@@ -691,13 +816,13 @@ DoCurXY             bsr       HideCrsr  ; hide cursor
 * $04 - clear characters to end of line
 ErEOLine            bsr       HideCrsr  ; hide cursor
                     tfr       x,d       ; move current cursor position to D
-                    andb      #$1F      ; number of characters put on this line
+                    andb      #COLSIZE-1 ; number of characters put on this row
                     negb                ; negative
                     bra       L0374     ; and clear one line
 
 * $03 - erase line cursor is on
 DelLine             lbsr      Retrn     ; do a carriage return
-L0374               addb      #32       ; b = $00 from Retrn
+L0374               addb      #COLSIZE  ; B=0 from Retrn
 L0376               lda       #$60      ; get default VDG space char
                     ldx       <VD.CrsrA,u ; get cursor address
 * 6809-May be able to use StkBlClr, and 6309 TFM
@@ -708,7 +833,7 @@ L037B               sta       ,x+       ; save default char
 
 * $09 - moves cursor up one line
 CurUp               lbsr      HideCrsr  ; hide cursor
-                    leax      <-32,x    ; move X up one line
+                    leax      <-COLSIZE,x ; move X up one row
                     cmpx      <VD.ScrnA,u ; compare against start of screen
                     lbcs      ShowCrsr  ; branch if we went beyond
                     stx       <VD.CrsrA,u ; else store updated X
@@ -1599,15 +1724,24 @@ GetStat             ldx       PD.RGS,y  ; get ptr to users stack
 *       Y = Y screen size (16)
 Rt.ScSiz            equ       *
                   IFNE    H6309
-                    ldq       #$00200010 ; always returns 32x16
+                    IFNE    COCOVGA
+                    ldq       #$00400020 ; 64x32
+                    ELSE
+                    ldq       #$00200010 ; 32x16
+                    ENDC
                     stq       R$X,x
                   ELSE
-*         ldb   <VD.Col,u
-                    ldd       #$0020    ; always returns 32x16
+                    IFNE    COCOVGA
+                    ldd       #$0040    ; 64 columns
                     std       R$X,x
-*         ldb   <VD.Row,u
-                    ldb       #$10
+                    ldd       #$0020    ; 32 rows
                     std       R$Y,x
+                    ELSE
+                    ldd       #$0020    ; 32 columns
+                    std       R$X,x
+                    ldd       #$0010    ; 16 rows
+                    std       R$Y,x
+                    ENDC
                   ENDC
                     clrb
                     rts
@@ -1660,18 +1794,33 @@ Rt.Cursr            ldd       <VD.CrsrA,u
                     subd      <VD.ScrnA,u
                     pshs      d
                     clra
-                    andb      #$1F
+                    andb      #COLSIZE-1
                     addb      #$20
                     std       R$X,x     ; save column position in ASCII
-                    puls      d         ; then divide by 32
+                    puls      d         ; calculate row from screen offset
+                  IFNE    COCOVGA
+                    lsra                ; divide by 64 for CoCoVGA
+                    rorb
                     lsra
+                    rorb
+                    lsra
+                    rorb
+                    lsrb
+                    lsrb
+                    lsrb
+                    clra
+                    andb      #$1F      ; 32 rows
+                  ELSE
+                    lsra                ; divide by 32 for VDG
                     rolb
                     rolb
                     rolb
                     rolb
                     clra
-                    andb      #$0F      ; only 16 lines to a screen
+                    andb      #$0F      ; 16 rows
+                  ENDC
                     addb      #$20
+                    std       R$Y,x
                     std       R$Y,x
                     ldb       <VD.CFlag,u ; get true lowercase flag
                     lda       <VD.CChar,u ; get character that is under cursor
@@ -1809,7 +1958,11 @@ L054C               ldb       #$10      ; default to true lowercase
                     bne       L0553     ; caller wants true lowercase, skip ahead
                     clrb                ; inverse video instead
 L0553               stb       <VD.CFlag,u
+                                      IFNE    COCOVGA
+                    ldd       #$4020    ; 64x32
+                  ELSE
                     ldd       #$2010    ; 32x16
+                  ENDC
                     inc       <VD.DFlag,u ; flag that we need to update video hardware
                     std       <VD.Col,u ; save screen size
                     rts
