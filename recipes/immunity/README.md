@@ -1,6 +1,6 @@
-# CoCo 2 + i-MMU-nity Build Recipes
+# CoCo 1/2 and Dragon 64 + i-MMU-nity Build Recipes
 
-NitrOS-9 Level 2 for a Color Computer 1/2 fitted with an i-MMU-nity MMU board.
+NitrOS-9 Level 2 for a Color Computer 1/2 or Dragon 64 fitted with an i-MMU-nity MMU board.
 The console is the 32x16 VDG screen (`covdg.io`). There is no GIME, so the CoCo 3
 window system (CoWin, GrfDrv) is not available.
 
@@ -9,14 +9,32 @@ window system (CoWin, GrfDrv) is not available.
 - [`floppy/`](floppy/) builds `l2_immunity_floppy.dsk` (`TRACKS=40` default, or 80)
 - [`sdc/`](sdc/) builds `l2_immunity_sdc.dsk` for the CoCo SDC (the floppy
   driver is included as well)
+- [`dragon/`](dragon/) builds four Dragon 64 + DragonDOS images: CoVDG (32x16),
+  CoHR (51x24), Co42 (42x24), and CoCoVGA (64x32).
 
 ```sh
 export NITROS9DIR=/path/to/nitros9
 make -C recipes/immunity/floppy
 make -C recipes/immunity/sdc
+make -C recipes/immunity/dragon
 ```
 
 Boot from Disk BASIC with `DOS`.
+
+## Dragon 64 video variants
+
+The Dragon recipe builds the four video configurations in isolated recipe
+directories, each with its own objects, libraries and assembled modules:
+
+- `recipes/immunity/dragon/covdg/` — standard 32x16 VDG
+- `recipes/immunity/dragon/cohr/` — 51x24 CoHR
+- `recipes/immunity/dragon/co42/` — 42x24 Co42
+- `recipes/immunity/dragon/cocovga/` — 64x32 CoCoVGA (two additional 2K screens)
+
+Run `make -C recipes/immunity/dragon` to build all four. Each directory can
+also be built separately. The CoCoVGA driver reserves four contiguous
+512-byte page pairs for each screen; consequently it supports /term plus
+/V1 and /V2.
 
 ## Options
 
