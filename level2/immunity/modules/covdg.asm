@@ -123,11 +123,11 @@ Init                pshs      u,y,x     ; save regs
                     beq       InitNoHiRes ; continue when the optional module is absent
                     jsr       H$Init,x  ; initialize this device's screen descriptors
 InitNoHiRes         equ       *
-                    bsr       SetupPal  ; set up palettes
+                    lbsr      SetupPal  ; set up palettes
                     lda       #$AF      ; blue VDG char
                     sta       <VD.CColr,u ; save as default color cursor
                     lbsr      MJScrAlc  ; get a VDG-visible text screen in X
-                    bcs       L00D6
+                    lbcs      L00D6
                     stx       <VD.ScrnA,u ; save start address of the screen
                     stx       <VD.CrsrA,u ; and cursor address
                     leax      >SCRSIZE,x ; point to end of screen+1
