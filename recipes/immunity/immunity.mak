@@ -63,13 +63,13 @@ else
 AFLAGS_COVDG = -DCOCOVGA=0
 ifeq ($(HIRES),51)
 VDGCO = cohr.io
-AFLAGS_VDG = -DUSECOHR=1
+AFLAGS_VDG = -DCOCOVGA=0 -DUSECOHR=1
 else ifeq ($(HIRES),42)
 VDGCO = co42.io
-AFLAGS_VDG = -DUSECO42=1
+AFLAGS_VDG = -DCOCOVGA=0 -DUSECO42=1
 else ifeq ($(HIRES),0)
 VDGCO = covdg.io
-AFLAGS_VDG =
+AFLAGS_VDG = -DCOCOVGA=0
 else
 $(error Unsupported HIRES "$(HIRES)"; use HIRES=0, 42 or 51)
 endif
