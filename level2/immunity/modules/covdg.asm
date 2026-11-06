@@ -866,7 +866,15 @@ DispAlfa            pshs      x,y,a     ; preserve regs (A=video bits to merge i
 L03AD               sta       <VD.TFlg1,u ; save updated VDG info
                     tst       >WGlobal+G.CrDvFl ; are we active device?
                     lbeq      L0440     ; no, skip ahead
-                    sta       >PIA1Base+2 ; yes, set lowercase in hardware
+* A CoCoVGA text display has already selected the enhanced 64x32 mode
+* during Init. Do not write the ordinary VDG text-mode value to FF22 here:
+* that clears the CoCoVGA control bits and drops the display out of W64 mode.
+                  IFNE    COCOVGA
+                    tstb
+                    beq       CVGAKeepTextMode
+                  ENDC
+                    sta       >PIA1Base+2 ; set standard VDG mode for graphics
+CVGAKeepTextMode    equ       *
                     ldy       #$FFC6    ; ok, now set up via old CoCo 2 mode the graphics video mode.
                     tstb                ; text screen?
                     bne       L03CB     ; no, set up for graphics
