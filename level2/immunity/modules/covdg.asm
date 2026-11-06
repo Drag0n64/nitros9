@@ -1718,10 +1718,8 @@ GetStat             ldx       PD.RGS,y  ; get ptr to users stack
                     ldb       #E$UnkSvc
                     rts
 
-* Returns window or screen size. Currently hardcoded 32x16 for Coco 3/level 2. Level 1 now
-* has CocoVGA support, so it uses the static mem values.
-* Exit: X = X screen size (32)
-*       Y = Y screen size (16)
+* Returns the active text screen size.
+* Exit: X = columns; Y = rows (32x16 VDG or 64x32 CoCoVGA).
 Rt.ScSiz            equ       *
                   IFNE    H6309
                     IFNE    COCOVGA
@@ -1820,7 +1818,6 @@ Rt.Cursr            ldd       <VD.CrsrA,u
                     andb      #$0F      ; 16 rows
                   ENDC
                     addb      #$20
-                    std       R$Y,x
                     std       R$Y,x
                     ldb       <VD.CFlag,u ; get true lowercase flag
                     lda       <VD.CChar,u ; get character that is under cursor

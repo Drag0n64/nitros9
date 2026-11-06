@@ -13,7 +13,7 @@
 PORT := immunity
 CPU := 6809
 LEVEL := 2
-MACHINE ?= Color Computer 2 with i-MMU-nity
+MACHINE := Color Computer 2 with i-MMU-nity
 include $(NITROS9DIR)/recipes/rules.mak
 RECIPE ?= immunity
 -include recipe.mak
@@ -35,32 +35,20 @@ MEDIA ?= floppy
 # (display only; typed input is unchanged).
 VDG_T1 ?= 0
 UPPERCASE ?= 0
-# HIRES=42 or HIRES=51 selects Co42 (42x24) or CoHR (51x24).
-# COCOVGA=1 selects the CoCoVGA 64x32 mode in the CoVDG driver.
+# HIRES=42 or HIRES=51: the console is 42x24 (Co42) or 51x24 (CoHR) text
+# drawn on PMODE 4 graphics screens instead of CoVDG's 32x16. Green on
+# black; HIRES_BUFF=1 for buff on black; HIRES_INVERSE=1 for black text on
+# green (or buff). On an NTSC TV, 42 columns reads
+# better (51 is best on a monochrome monitor or a CoCoDV).
+# HIRES_CODV=1 with a CoCoDV: monochrome (no artifact colours), green text
+# on a dark green background.
 HIRES ?= 0
-COCOVGA ?= 0
 HIRES_BUFF ?= 0
 HIRES_INVERSE ?= 0
 HIRES_CODV ?= 0
-
-ifneq ($(COCOVGA),0)
-ifneq ($(COCOVGA),1)
-$(error COCOVGA must be 0 or 1)
-endif
-endif
-ifeq ($(COCOVGA),1)
-ifneq ($(HIRES),0)
-$(error COCOVGA=1 cannot be combined with HIRES=42 or HIRES=51)
-endif
-VDGCO = covdg.io
-AFLAGS_VDG = -DCOCOVGA=1
-AFLAGS_COVDG = -DCOCOVGA=1
-VDG_WINDOWS ?= 2
-ifneq ($(filter-out 0 1 2,$(VDG_WINDOWS)),)
-$(error VDG_WINDOWS=$(VDG_WINDOWS): CoCoVGA supports 0 to 2 extra 2K screens)
-endif
-else
-AFLAGS_COVDG = -DCOCOVGA=0
+# VDG_WINDOWS=n adds /V1../Vn, extra screens (CLEAR/SHIFT-CLEAR switch
+# between them; start a shell with "shell i=/v1&"). 32x16, 0 to 7; with
+# HIRES, 0 to 4 (each takes one of the 5 VDG pool blocks).
 ifeq ($(HIRES),51)
 VDGCO = cohr.io
 AFLAGS_VDG = -DUSECOHR=1
@@ -79,7 +67,6 @@ else
 VDG_WINDOWS ?= 4
 ifneq ($(filter-out 0 1 2 3 4,$(VDG_WINDOWS)),)
 $(error VDG_WINDOWS=$(VDG_WINDOWS): HIRES allows 0 to 4)
-endif
 endif
 endif
 TRACKS ?= 40
@@ -250,12 +237,10 @@ $(MODDIR)/co42.io: $(L2PMD)/cohr.asm $(L2PMD)/co42font.asm | $(MODDIR)
 # Module variants
 
 $(MODDIR)/covdg.io: covdg.asm | $(MODDIR)
-	$(AS) $(AFLAGS) $< $(ASOUT)$@ $(AFLAGS_COVDG) -DALLCAPS=$(UPPERCASE)
+	$(AS) $(AFLAGS) $< $(ASOUT)$@ -DALLCAPS=$(UPPERCASE)
 
 # /term: default VDG character set (descriptor parity byte, see term_vdg.asm)
-ifeq ($(COCOVGA),1)
-TERM_VDG_FLAGS =
-else ifeq ($(VDG_T1),1)
+ifeq ($(VDG_T1),1)
 TERM_VDG_FLAGS =
 else
 TERM_VDG_FLAGS = -DPLAIN6847=1

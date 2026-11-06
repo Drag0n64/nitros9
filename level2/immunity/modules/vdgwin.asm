@@ -1,10 +1,8 @@
 ********************************************************************
 * Vn - VDG window descriptor for the CoCo 1/2 with an i-MMU-nity
 *
-* One source for /V1 to /V7, extra VDG-family screens that CLEAR and
-* SHIFT-CLEAR switch between. CoCoVGA supports two extra 64x32 screens;
-* standard VDG supports up to seven. Assemble with -DWNUM=1..7. This is
-* the CoCo 3
+* One source for /V1 to /V7, extra 32x16 VDG screens that CLEAR and
+* SHIFT-CLEAR switch between. Assemble with -DWNUM=1..7. This is the CoCo 3
 * port's v1.asm-v7.asm with the window number as a parameter and the
 * character set option of term_vdg.asm: -DPLAIN6847=1 for a plain MC6847
 * (parity byte 0: CoVDG's inverse lower case mode), otherwise 6847T1 true
@@ -29,10 +27,6 @@ atrv                set       ReEnt+rev
 rev                 set       $00
 
 * Window descriptor definitions
-                    ifne      COCOVGA
-szx                 set       64        64x32 CoCoVGA text
-szy                 set       32
-                    else
                     ifne      USECOHR
 szx                 set       51        51x24 text on PMODE 4 (CoHR)
 szy                 set       24
@@ -43,7 +37,6 @@ szy                 set       24
                     else
 szx                 set       32        number of columns for display
 szy                 set       16        number for rows for display
-                    endc
                     endc
                     endc
 wnum                set       WNUM      window number (1-7)

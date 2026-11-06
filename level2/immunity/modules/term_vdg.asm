@@ -1,8 +1,8 @@
 ********************************************************************
 * Term - VTIO VDG device descriptor for the CoCo 1/2 with an i-MMU-nity
 *
-* The /term descriptor for the port's 32x16 VDG console. This is
-* level1/coco1/modules/term_vdg.asm reduced to the Level 2 VDG case, with
+* The /term descriptor for the port's VDG-family console (32x16 VDG,
+* 64x32 CoCoVGA, Co42 or CoHR). This is the Level 2 VDG case of
 * the character set option of vdgwin.asm: -DPLAIN6847=1 for a plain MC6847
 * (parity byte 0: CoVDG's inverse lower case mode), otherwise 6847T1 true
 * lower case.

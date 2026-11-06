@@ -77,8 +77,9 @@ Block `$3B` is laid out as follows:
 - `+$0000-$01FF`: the BtDebug cursor and, after boot, hidden breadcrumb and
   crash code storage.
 - `+$0200-$03FF`: the boot screen. `/term` takes it over.
-- `+$0400` up: further 512-byte text screens for `/V1`-`/V7`, up to 15
-  screens in all.
+- `+$0400` up: further text-screen storage. Standard VDG uses 512-byte
+  screens; CoCoVGA uses 2K screens. The CoCoVGA build supports `/term`, `/V1`
+  and `/V2` (three screens in the 8K motherboard text area).
 
 The kernel changes are size-neutral: the 6809 CoCo krn is a fixed `$F00`
 bytes, with only an 8-byte padding string. The i-MMU-nity changes trade against the
