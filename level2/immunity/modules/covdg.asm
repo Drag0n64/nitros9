@@ -1810,10 +1810,11 @@ Rt.Cursr            ldd       <VD.CrsrA,u
                     andb      #$1F      ; 32 rows
                   ELSE
                     lsra                ; divide by 32 for VDG
-                    rolb
-                    rolb
-                    rolb
-                    rolb
+                    rorb
+                    lsrb
+                    lsrb
+                    lsrb
+                    lsrb
                     clra
                     andb      #$0F      ; 16 rows
                   ENDC
