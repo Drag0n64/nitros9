@@ -74,8 +74,8 @@ must be tested on real hardware. The Dragon SDC recipe uses the CoCoSDC's
 Dragon register map (`DRGN=ON`) and requires the board's `DRQ` jumper for
 DragonDOS floppy-controller emulation. The DragonDOS floppy view exposes only
 the first 1440 sectors of a hard-disk DSK image; the boot area and track 34
-are within that range. NitrOS-9 accesses the full image through the LBA driver. On
-floppy, allow a minute or so after boot for the startup commands to load.
+are within that range. NitrOS-9 accesses the full image through the LBA driver.
+On floppy, allow a minute or so after boot for the startup commands to load.
 
 ## Status
 
