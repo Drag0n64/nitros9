@@ -9,6 +9,7 @@
 # MEDIA selects the boot device:
 #   floppy  WD1773 floppy (rb1773), 40 or 80 tracks (TRACKS=40|80)
 #   sdc     CoCo SDC (rbsuper + llcocosdc), with the floppy driver as well
+#   dragon  DragonDOS floppy boot (can be extended by a recipe's RBF override)
 
 PORT := immunity
 CPU := 6809
