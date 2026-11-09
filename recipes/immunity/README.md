@@ -10,7 +10,8 @@ so the CoCo 3 window system (CoWin, GrfDrv) is not available.
 - [`sdc/`](sdc/) builds `l2_immunity_sdc.dsk` for a CoCo SDC.
 - [`dragon_dos_sdc/`](dragon_dos_sdc/) builds a standard DragonDOS boot floppy
   with the CoCoSDC RBF driver stack loaded as additional devices `/SD0` and
-  `/SD1`. DragonDOS remains `/DD` and the boot path is unchanged.
+  `/SD1`. DragonDOS remains `/DD`; this recipe keeps the CoCoSDC's DragonDOS
+  floppy emulation enabled while adding its LBA hard-disk interface.
 
 - [`dragon_sdc/`](dragon_sdc/) builds an approximately 8 MiB RBF hard-disk
   image for a Dragon 64 + i-MMU-nity + CoCoSDC. Start it with DragonDOS
