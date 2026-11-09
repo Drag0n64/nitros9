@@ -106,6 +106,26 @@ RBF ?= rbf.mn rbsuper.dr llcocosdc.dr ddsd0_cocosdc.dd sd0_cocosdc.dd \
 	sd1_cocosdc.dd $(FLOPPY)
 # 1024 tracks x 18 sectors x 256 bytes = 4.5MB, the size used on the SDC so far
 OS9FORMAT_CMD ?= $(OS9FORMAT) -t1024 -ss -dd
+
+else ifeq ($(MEDIA),dragon_sdc)
+# Dragon 64 + i-MMU-nity, booting from a CoCoSDC 8 MB RBF image.
+# DragonDOS BOOT enters stage0_d64 through the emulated WD2797 interface;
+# stage0 loads the kernel track from track 34. The kernel's boot_sdc module
+# then loads OS9Boot through the CoCoSDC LBA command interface.
+AFLAGS += -Dd64=1
+vpath %.asm $(LEVEL1)/d64/modules
+BOOTER ?= boot_sdc
+RBF ?= rbf.mn rbsuper.dr llcocosdc.dr ddsd0_cocosdc.dd sd0_cocosdc.dd \\
+	sd1_cocosdc.dd
+# 1820 tracks x 18 sectors x 256 bytes = 8,386,560 bytes (~8 MiB).
+# The DragonDOS-compatible track/sector view is used only for the initial
+# boot area and track 34; all RBF/OS9Boot access is via the SDC LBA driver.
+OS9FORMAT_CMD ?= $(OS9FORMAT) -t1820 -ss -dd
+GEN_DEPS = $(MODDIR)/stage0_d64
+GEN_PRE = $(OS9GEN) $@ -d -t=$(MODDIR)/stage0_d64
+XROAR_RUN = -machine dragon64 -machine-opt immunity -cart dragondos \\
+	-load-fd0 $(DSKIMAGE) -type 'BOOT\\r'
+
 else ifeq ($(MEDIA),dragon)
 # Dragon 64: DragonDOS controller (ddisk), Dragon keyboard rows in VTIO,
 # stage-0 loader in the DragonDOS boot area (LSN 2-17) that loads the
