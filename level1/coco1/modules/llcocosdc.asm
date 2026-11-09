@@ -268,7 +268,11 @@ CommSDC
 
 * Put controller in Command mode
                     lda       #CMDMODE            the magic number
-                    sta       -10,y               send to control latch (FF40)
+                    ifne      d64
+                    sta       CTRLATCH            send to Dragon control latch (FF48)
+                    else
+                    sta       -10,y               send to CoCo control latch (FF40)
+                    endc
                     puls      a                   pull saved command code back into A
 
 * Put input parameters into the registers.
@@ -372,7 +376,11 @@ cmdOK               clrb                          status code for SUCCESS, clear
 * Exit
 cmdExit             puls      a                   pull saved MPI settings
                     rol       ,s                  rotate carry into saved CC on stack
-                    clr       -10,y               end command mode
+                    ifne      d64
+                    clr       CTRLATCH            end Dragon command mode
+                    else
+                    clr       -10,y               end CoCo command mode
+                    endc
                     sta       MPIREG              restore saved MPI settings
                     puls      cc,pc               restore irq masks, update carry and return
 
@@ -473,10 +481,17 @@ chkSlot             stb       MPIREG              activate slot being scanned
                     lda       ,s                  have we already found CoCo SDC ?
                     bpl       chkFDC              branch if yes
                     lda       #$64                test pattern
-                    sta       -6,x                store at Flash Data Reg address
+                    ifne      d64
+                    sta       FLSHDAT             store at Dragon Flash Data Reg
+                    lda       FLSHCTL             get value from Flash Ctrl Reg
+                    clr       FLSHDAT             clear Flash Data Reg
+                    eora      FLSHCTL             get changed bits from Ctrl Reg
+                    else
+                    sta       -6,x                store at CoCo Flash Data Reg
                     lda       -5,x                get value from Flash Ctrl Reg
                     clr       -6,x                clear Flash Data Reg
                     eora      -5,x                get changed bits from Ctrl Reg
+                    endc
                     suba      #$60                did expected bits change?
                     bne       chkFDC              branch if not an SDC
                     stb       ,s                  record the SDC slot
