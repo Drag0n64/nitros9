@@ -28,12 +28,21 @@ BootDr              set       1
 LSN24BIT            equ       1
 FLOPPY              equ       0
 
-* DPort offsets
+* DPort offsets. In Dragon address mode the command/parameter
+* registers move to $FF40-$FF43 and the control latch to $FF48.
+                    ifne      d64
+CONTROL             equ       8                   write-only
+CMDREG              equ       0                   write-only
+STATREG             equ       CMDREG              read-only
+LSNREG              equ       1
+DATAREG             equ       2
+                    else
 CONTROL             equ       0                   write-only
 CMDREG              equ       8+0                 write-only
 STATREG             equ       CMDREG              read-only
 LSNREG              equ       8+1
 DATAREG             equ       8+2
+                    endc
 
 * NOTE: these are U-stack offsets, not DP
 seglist             rmb       2                   pointer to segment list
