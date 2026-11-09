@@ -4,6 +4,9 @@ MEDIA = dragon
 RECIPE = immunity_dragon_dos_sdc
 PwrLnFrq ?= 50
 TRACKS ?= 40
+# CoCoSDC supplies the DragonDOS /DD floppy interface as well as the RBF
+# hard disk. Keep its DOS floppy emulation enabled after llcocosdc initializes.
+AFLAGS_EXTRA += -DKEEPFDC=1
 # Preserve the standard DragonDOS floppy and add the CoCoSDC super-driver.
 # Do not include ddsd0_cocosdc.dd: that would claim /DD, which must remain
 # the DragonDOS boot volume in this recipe.
