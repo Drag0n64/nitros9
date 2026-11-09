@@ -103,7 +103,7 @@ endif
 else ifeq ($(MEDIA),sdc)
 BOOTER ?= boot_sdc
 RBF ?= rbf.mn rbsuper.dr llcocosdc.dr ddsd0_cocosdc.dd sd0_cocosdc.dd \
-	sd1_cocosdc.dd $(FLOPPY)
+	sd1_cocosdc.dd
 # 1024 tracks x 18 sectors x 256 bytes = 4.5MB, the size used on the SDC so far
 OS9FORMAT_CMD ?= $(OS9FORMAT) -t1024 -ss -dd
 
