@@ -113,8 +113,7 @@ else ifeq ($(MEDIA),dragon_sdc)
 # then loads OS9Boot through the CoCoSDC LBA command interface.
 AFLAGS += -Dd64=1
 BOOTER ?= boot_sdc
-RBF ?= rbf.mn rbsuper.dr llcocosdc.dr ddsd0_cocosdc.dd sd0_cocosdc.dd \\
-	sd1_cocosdc.dd
+RBF ?= rbf.mn rbsuper.dr llcocosdc.dr ddsd0_cocosdc.dd sd0_cocosdc.dd sd1_cocosdc.dd
 # 1820 tracks x 18 sectors x 256 bytes = 8,386,560 bytes (~8 MiB).
 # The DragonDOS-compatible track/sector view is used only for the initial
 # boot area and track 34; all RBF/OS9Boot access is via the SDC LBA driver.
