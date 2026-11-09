@@ -113,7 +113,6 @@ else ifeq ($(MEDIA),dragon_sdc)
 # stage0 loads the kernel track from track 34. The kernel's boot_sdc module
 # then loads OS9Boot through the CoCoSDC LBA command interface.
 AFLAGS += -Dd64=1
-vpath %.asm $(LEVEL1)/coco1/modules
 BOOTER ?= boot_sdc
 RBF ?= rbf.mn rbsuper.dr llcocosdc.dr ddsd0_cocosdc.dd sd0_cocosdc.dd \\
 	sd1_cocosdc.dd
