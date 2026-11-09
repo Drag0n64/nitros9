@@ -526,13 +526,18 @@ useSlot             stb       MPIREG              activate default MPI slot
                     leas      3,s                 pop variables off the stack
                     puls      cc                  restore saved irq masks
 
-* Disable Floppy Emulation capability in SDC controller
+* The default is to disable the SDC's DragonDOS floppy emulation so a
+* separate physical floppy controller can coexist with the SDC.
+* KEEPFDC is set by the DragonDOS+SDC hybrid recipe: there the CoCoSDC
+* itself provides /DD, so its floppy emulation must remain enabled.
+                    ifeq      KEEPFDC
                     lda       #$C0                primary command code
                     ldb       #'g                 secondary command to "Set Global Flags"
                     ldx       #$FF80              mask/flag bytes
                     leay      ,u                  point Y at static variables
                     ldu       #$FFFF              "no buffer" address
                     lbsr      CommSDC             send command to controller
+                    endc
                     clrb                          no error
                     rts                           return
 
