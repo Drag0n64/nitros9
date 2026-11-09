@@ -147,7 +147,7 @@ GEN_PRE = $(OS9GEN) $@ -d -t=$(MODDIR)/stage0_d64
 XROAR_RUN = -machine dragon64 -machine-opt immunity -cart dragondos \
 	-load-fd0 $(DSKIMAGE) -type 'BOOT\r'
 else
-$(error Unsupported MEDIA "$(MEDIA)"; use MEDIA=floppy, sdc or dragon)
+$(error Unsupported MEDIA "$(MEDIA)"; use MEDIA=floppy, sdc, dragon or dragon_sdc)
 endif
 
 # ---------------------------------------------------------------------------
