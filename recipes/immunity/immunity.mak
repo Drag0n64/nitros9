@@ -122,8 +122,8 @@ RBF ?= rbf.mn rbsuper.dr llcocosdc.dr ddsd0_cocosdc.dd sd0_cocosdc.dd \\
 OS9FORMAT_CMD ?= $(OS9FORMAT) -t1820 -ss -dd
 GEN_DEPS = $(MODDIR)/stage0_d64
 GEN_PRE = $(OS9GEN) $@ -d -t=$(MODDIR)/stage0_d64
-XROAR_RUN = -machine dragon64 -machine-opt immunity -cart dragondos \\
-	-load-fd0 $(DSKIMAGE) -type 'BOOT\\r'
+XROAR_RUN = -machine dragon64 -machine-opt immunity -cart dragondos \
+	-load-fd0 $(DSKIMAGE) -type 'BOOT\r'
 
 else ifeq ($(MEDIA),dragon)
 # Dragon 64: DragonDOS controller (ddisk), Dragon keyboard rows in VTIO,
