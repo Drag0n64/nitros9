@@ -1,0 +1,5 @@
+echo * Welcome to NitrOS-9 Level 2 *
+echo * Dragon 64 + i-MMU-nity + CoCoSDC *
+link shell
+load utilpak1
+date -t
