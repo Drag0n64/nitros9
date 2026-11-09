@@ -1,0 +1,54 @@
+name: Build DragonDOS i-MMU-nity floppy with CoCoSDC drivers
+
+on:
+  push:
+    branches:
+      - dragon-dos-sdc
+    paths:
+      - 'recipes/immunity/**'
+      - 'level1/coco1/modules/llcocosdc.asm'
+      - 'level1/modules/superdesc.asm'
+      - 'level1/modules/rbsuper.asm'
+      - 'defs/cocosdc.d'
+      - '.github/workflows/build-dragon-dos-sdc.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout NitrOS-9
+        uses: actions/checkout@v5
+      - name: Checkout language sources
+        uses: actions/checkout@v5
+        with:
+          repository: nitros9project/nitros9-languages
+          path: nitros9-languages
+      - name: Install Toolshed
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          mkdir -p toolshed
+          TOOLSHED_TAG=$(gh release list -R nitros9project/toolshed --limit 30 | awk '{print $1}' | grep -E '^v[0-9]' | head -n 1)
+          gh release download "$TOOLSHED_TAG" -R nitros9project/toolshed -p "toolshed-unix*.tgz" -D toolshed
+          sudo tar xvf toolshed/toolshed-unix*.tgz --strip-components=1 -C /usr/local/bin
+      - name: Install LwTools
+        run: sudo bash ./.github/workflows/lwtools.sh
+      - name: Build DragonDOS boot image with SDC as secondary device
+        env:
+          NITROS9DIR: ${{ github.workspace }}
+          LANGUAGES: ${{ github.workspace }}/nitros9-languages
+        run: |
+          make -C recipes/immunity/dragon_dos_sdc clean
+          make -C recipes/immunity/dragon_dos_sdc TRACKS=40
+          test -s recipes/immunity/dragon_dos_sdc/l2_immunity_dragon_dos_sdc.dsk
+          stat recipes/immunity/dragon_dos_sdc/l2_immunity_dragon_dos_sdc.dsk
+      - name: Upload DSK image
+        uses: actions/upload-artifact@v4
+        with:
+          name: l2_immunity_dragon_dos_sdc
+          path: recipes/immunity/dragon_dos_sdc/l2_immunity_dragon_dos_sdc.dsk
+          if-no-files-found: error
