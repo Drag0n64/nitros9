@@ -13,10 +13,24 @@
 COCOSDC.D           SET       1
 
 
+* CoCoSDC hardware addresses depend on the selected bus scheme. The
+* Dragon scheme moves the command/parameter registers to $FF40-$FF43 and
+* the control latch to $FF48. The LBA command protocol is otherwise the same.
+                    ifne      d64
+SDAddr              SET       $FF42
+CTRLATCH            equ       $FF48               controller latch (write)
+CMDREG              equ       $FF40               command register (write)
+STATREG             equ       $FF40               status register (read)
+PREG1               equ       $FF41               param register 1
+PREG2               equ       $FF42               param register 2
+PREG3               equ       $FF43               param register 3
+DATREGA             equ       PREG2
+DATREGB             equ       PREG3
+FLSHDAT             equ       $FF4A               flash data register
+FLSHCTL             equ       $FF4B               flash control register
+                    else
 * Main Port Address (V.PORT)
 SDAddr              SET       $FF4A
-
-* Hardware Addressing - CoCo Scheme
 CTRLATCH            equ       $FF40               controller latch (write)
 CMDREG              equ       $FF48               command register (write)
 STATREG             equ       $FF48               status register (read)
@@ -26,6 +40,8 @@ PREG3               equ       $FF4B               param register 3
 DATREGA             equ       PREG2               first data register
 DATREGB             equ       PREG3               second data register
 FLSHDAT             equ       $FF42               flash data register
+FLSHCTL             equ       $FF43               flash control register
+                    endc
 
 * Status Register Masks
 BUSY                equ       %00000001           set while a command is executing
