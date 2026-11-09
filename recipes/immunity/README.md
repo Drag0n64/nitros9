@@ -1,22 +1,28 @@
-# CoCo 2 + i-MMU-nity Build Recipes
+# i-MMU-nity Level 2 Build Recipes
 
-NitrOS-9 Level 2 for a Color Computer 1/2 fitted with an i-MMU-nity MMU board.
-The console is the 32x16 VDG screen (`covdg.io`). There is no GIME, so the CoCo 3
-window system (CoWin, GrfDrv) is not available.
+NitrOS-9 Level 2 for a Color Computer 1/2 or Dragon 64 fitted with an i-MMU-nity
+MMU board. The console is the 32x16 VDG screen (`covdg.io`). There is no GIME,
+so the CoCo 3 window system (CoWin, GrfDrv) is not available.
 
 ## Build Directories
 
 - [`floppy/`](floppy/) builds `l2_immunity_floppy.dsk` (`TRACKS=40` default, or 80)
-- [`sdc/`](sdc/) builds `l2_immunity_sdc.dsk` for the CoCo SDC (the floppy
-  driver is included as well)
+- [`sdc/`](sdc/) builds `l2_immunity_sdc.dsk` for a CoCo SDC.
+- [`dragon_sdc/`](dragon_sdc/) builds an approximately 8 MiB RBF hard-disk
+  image for a Dragon 64 + i-MMU-nity + CoCoSDC. Start it with DragonDOS
+  `BOOT`; the DragonDOS floppy view is used for the initial boot area and
+  kernel track, then the Dragon-mapped CoCoSDC LBA interface loads `OS9Boot`
+  and provides the full RBF volume.
 
 ```sh
 export NITROS9DIR=/path/to/nitros9
 make -C recipes/immunity/floppy
 make -C recipes/immunity/sdc
+make -C recipes/immunity/dragon_sdc
 ```
 
-Boot from Disk BASIC with `DOS`.
+Boot CoCo recipes from Disk BASIC with `DOS`. For the Dragon SDC image, mount
+it as DragonDOS drive 0 and enter `BOOT`.
 
 ## Options
 
@@ -63,12 +69,17 @@ XRoar's `-machine-opt immunity` emulates the i-MMU-nity MMU. In `floppy/`,
 `$(NITROS9DIR)/../xroar/run-memjr.sh`. Add `-vdg-type 6847` to XRoar for a plain
 MC6847 (its CoCo 2B machine has a 6847T1).
 
-XRoar has no CoCo SDC emulation, so test the `sdc` image on real hardware. On
+XRoar has no CoCoSDC LBA emulation, so the `sdc` and `dragon_sdc` images
+must be tested on real hardware. The Dragon SDC recipe uses the CoCoSDC's
+Dragon register map (`DRGN=ON`) and requires the board's `DRQ` jumper for
+DragonDOS floppy-controller emulation. The DragonDOS floppy view exposes only
+the first 1440 sectors of a hard-disk DSK image; the boot area and track 34
+are within that range. NitrOS-9 accesses the full image through the LBA driver. On
 floppy, allow a minute or so after boot for the startup commands to load.
 
 ## Status
 
-Boots and runs on a real CoCo 2 with a 1MB i-MMU-nity, from the CoCo SDC:
+Verified: boots and runs on a real CoCo 2 with a 1MB i-MMU-nity, from the CoCo SDC:
 
 - Shell, the clock (PIA VSYNC interrupt), and memory sizing (512K/1M/2M)
 - The VDG text console `/term`, plus up to seven extra screens `/V1`-`/V7`
@@ -77,6 +88,8 @@ Boots and runs on a real CoCo 2 with a 1MB i-MMU-nity, from the CoCo SDC:
   MMU off); type `DOS` to boot again
 
 Besides the CoCo 3 standard commands, `CMDS` has `mmap`, `pmap` and `reboot`.
+
+The Dragon SDC recipe is new and has not yet been validated on physical Dragon hardware.
 
 Known limitations:
 
